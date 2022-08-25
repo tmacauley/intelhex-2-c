@@ -25,17 +25,15 @@ class MyIntelHex(intelhex.IntelHex):
 
     def to_c_src(self, start_address=None, thru_address=None, stride=8):
         """
-        Generator
+        Generate a line of c source code
         """
-        yield "byte rom[] = {"
 
-        result = '\t'
+        result = ''
         for index, value in enumerate(self._bytes(start_address, thru_address)):
             result += f'0x{value:0>2x}, '
             if index % stride == stride - 1:
                 yield result
-                result = '\t'
-        yield "}"
+                result = ''
 
 
 class MyParser(argparse.ArgumentParser):
@@ -64,5 +62,7 @@ if __name__ == "__main__":
     if args.padding is not None:
         hex_data.padding = args.padding
 
+    print("byte rom[] = {")
     for line in hex_data.to_c_src(args.start, args.end, args.width):
-        print(line)
+        print(f"\t{line}")
+    print("}")
