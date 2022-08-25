@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+
 # Utility program to convert Intel Hex file to C source code.
 # Requires IntelHex library installed
-#   Install with pip install intelhex
+#   Install IntelHex with pip install intelhex
 
 import intelhex
 import argparse
@@ -21,21 +23,24 @@ class MyIntelHex(intelhex.IntelHex):
         for address in range(start_address, thru_address+1):
             yield self[address]
 
-    def tocsrc(self, start_address=None, thru_address=None, stride=8):
-        print("byte rom[] = {")
+    def to_c_src(self, start_address=None, thru_address=None, stride=8):
+        """
+        Generator
+        """
+        yield "byte rom[] = {"
+
+        result = '\t'
         for index, value in enumerate(self._bytes(start_address, thru_address)):
-            if not (index % stride):
-                print("\t", end="")
-            # print(f'{index}: ', end="")
-            print(f'0x{value:0>2x}, ', end="")
+            result += f'0x{value:0>2x}, '
             if index % stride == stride - 1:
-                print("")
-        print("}")
+                yield result
+                result = '\t'
+        yield "}"
 
 
 class MyParser(argparse.ArgumentParser):
     def error(self, message):
-        sys.stderr.write('error: %s\n' % message)
+        # sys.stderr.write('error: %s\n' % message)
         self.print_help()
         sys.exit(2)
 
@@ -43,7 +48,7 @@ class MyParser(argparse.ArgumentParser):
 if __name__ == "__main__":
 
     parser = MyParser(description='Utility program to convert an Intel Hex file to C source code')
-    parser.add_argument("hex_file", help="Intel Hex file to read in")
+    parser.add_argument("infile", help="Intel Hex file to read in")
     parser.add_argument("-s", "--start", type=int, default=None,
                         help="Start Address for output. Default=Lowest address in hex File")
     parser.add_argument("-e", "--end", type=int, default=None,
@@ -52,10 +57,12 @@ if __name__ == "__main__":
                         help="Byte value for uninitialized data. Default=0xff")
     parser.add_argument("-w", "--width", type=int, default=8,
                         help="Values per line, default=8")
+
     args = parser.parse_args()
 
-    hex_file = MyIntelHex(args.hex_file)
+    hex_data = MyIntelHex(args.infile)
     if args.padding is not None:
-        hex_file.padding = args.padding
+        hex_data.padding = args.padding
 
-    hex_file.tocsrc(args.start, args.end, args.width)
+    for line in hex_data.to_c_src(args.start, args.end, args.width):
+        print(line)
