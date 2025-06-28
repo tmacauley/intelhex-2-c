@@ -34,6 +34,8 @@ class MyIntelHex(intelhex.IntelHex):
             if index % stride == stride - 1:
                 yield result
                 result = ''
+        if result:
+            yield result
 
 
 class MyParser(argparse.ArgumentParser):
